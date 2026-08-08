@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feat/jellyfin-12
+      - ci/jellyfin-12-test-artifact
 
 jobs:
   build:
@@ -24,3 +25,11 @@ jobs:
 
       - name: Build
         run: dotnet build Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj --configuration Release --no-restore -p:JellyfinTarget=jf12
+
+      - name: Upload Jellyfin 12 test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jellyfin.Plugin.JavaScriptInjector_12.0-test
+          path: Jellyfin.Plugin.JavaScriptInjector/bin/Release/net10.0/Jellyfin.Plugin.JavaScriptInjector.dll
+          if-no-files-found: error
+          retention-days: 7
