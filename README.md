@@ -1,123 +1,305 @@
 # Jellyfin Plugin - JavaScript Injector
 
-JavaScript Injector lets you manage and inject multiple independent JavaScript snippets into the Jellyfin Web UI from a single plugin configuration page.
+The JavaScript Injector plugin for Jellyfin allows you to inject multiple, independent JavaScript snippets into the Jellyfin web UI. It provides a powerful and easy-to-use configuration page to manage all your custom scripts from one place.
 
-This repository is a fork of [n00bcodr/Jellyfin-JavaScript-Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector) with Jellyfin 12 support.
+> [!NOTE]
+> This fork adds Jellyfin 12 support. Jellyfin 12 uses request-time ASP.NET middleware injection, so it does not require File Transformation or writes to `jellyfin-web/index.html`.
 
-## Features
+<p align="center">
+  <img src="https://img.shields.io/github/last-commit/n00bcodr/Jellyfin-JavaScript-Injector/main?logo=semantic-release&logoColor=white&label=Last%20Updated&labelColor=black&color=AA5CC3&cacheSeconds=3600" alt="Last Updated">
+  <img src="https://img.shields.io/github/commit-activity/w/n00bcodr/Jellyfin-JavaScript-Injector?logo=git&label=Commit%20Activity&labelColor=black&color=00A4DC&cacheSeconds=600" alt="Commit Activity">
+  <img src="https://img.shields.io/badge/Jellyfin%20Version-10.10, 10.11, 12-AA5CC3?logo=jellyfin&logoColor=00A4DC&labelColor=black" alt="Jellyfin Version">
+  <br>  <br>
+  <img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/n00bcodr/Jellyfin-JavaScript-Injector/latest/Jellyfin.Plugin.JavaScriptInjector_10.10.7.zip?displayAssetName=false&label=10.10%20Downloads%40Latest&labelColor=black&color=00A4DC&cacheSeconds=60">
+  <img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/n00bcodr/Jellyfin-JavaScript-Injector/latest/Jellyfin.Plugin.JavaScriptInjector_10.11.0.zip?displayAssetName=false&label=10.11%20Downloads%40Latest&labelColor=black&color=AA5CC3&cacheSeconds=60">
+  <br>  <br>
+  <a href="https://discord.com/channels/1381737066366242896/1442128048873930762"><img alt="Discord" src="https://img.shields.io/badge/Jellyfin%20Enhanced%20-%20Jellyfin%20Community?&logo=discord&logoColor=white&style=for-the-badge&label=Jellyfin%20Community&labelColor=5865F2&color=black"></a>
+  <br/><br/>
+    <img alt="Logo" src="icon.png" width="80%"  />
+<br>
+</p>
 
-- Multiple independently managed scripts
-- Enable/disable scripts without deleting them
-- Optional authenticated-only scripts
-- Search, drag-to-reorder, import and export
-- Plugin API for other Jellyfin plugins to register scripts
-- Jellyfin 12 request-time injection without modifying `jellyfin-web/index.html`
+## ✨ Features
 
-## Jellyfin 12
+-   **Multiple Scripts**: Add as many custom JavaScript snippets as you want.
 
-Jellyfin 12 uses the fork's request-time ASP.NET middleware injector. The loader is added to the Jellyfin Web `index.html` response in memory and the file on disk is left untouched.
+-   **Organized UI**: Each script is managed in its own collapsible section, keeping your configuration clean and easy to navigate.
 
-This means Jellyfin 12 does **not** require File Transformation, a writable Jellyfin Web directory, or an `index.html` bind mount.
+-   **Enable/Disable on the Fly**: Toggle individual scripts on or off without having to delete the code.
 
-The Jellyfin 12 build targets .NET 10 and Jellyfin `12.0.0-rc1` API packages so it can load on Jellyfin 12 RC and later compatible 12.x servers.
+-   **Immediate Injection**: The plugin injects a loader script into the Jellyfin web UI upon server startup. Your custom scripts are loaded dynamically, and changes take effect after a simple browser refresh.
 
-### Install on Jellyfin 12
+-   **Plugin Support**: Other plugins can register their own JavaScript snippets programmatically using the provided service interface.
 
-After the first Jellyfin 12 release has been published, add this repository in **Dashboard → Plugins → Catalog → Settings**:
+## ⚙️ Installation
 
-```text
-https://raw.githubusercontent.com/itsmeares/Jellyfin-JavaScript-Injector/main/manifest-v12.json
+
+1.  In Jellyfin, go to **Dashboard** > **Plugins** > **Catalog** > ⚙️
+2.  Click **➕** and give the repository a name (e.g., "JavaScript Injector Repo").
+3.  Set the **Repository URL** to:
+
+> [!IMPORTANT]
+> **If you are on Jellyfin version 12**
+> ```
+> https://raw.githubusercontent.com/itsmeares/Jellyfin-JavaScript-Injector/main/manifest-v12.json
+> ```
+>
+> The Jellyfin 12 release uses request-time injection and does not require File Transformation or a writable Jellyfin Web directory.
+>
+> **If you are on Jellyfin version 10.11**
+> ``` 
+> https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.11/manifest.json 
+> ```
+> If you are on 10.10.7
+> ``` 
+> https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.10/manifest.json 
+> ```
+
+4.  Click **Save**.
+5.  Go to the **Catalog** tab, find **JavaScript Injector** in the list, and click **Install**.
+6.  **Restart** your Jellyfin server to complete the installation.
+
+#### 🐳 Docker Installation Notes
+
+> [!IMPORTANT]
+> **Jellyfin 12:** no additional Docker mapping is required. The plugin injects at request time and leaves `index.html` unchanged.
+>
+> **Jellyfin 10.x:** if you use the legacy injection path, it is highly advisable to have [file-transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) at least v2.2.1.0 installed. It helps avoid permission issues while modifying index.html.
+
+
+If you're running Jellyfin 10.x through Docker without File Transformation, the plugin may not have permission to modify jellyfin-web to inject the script. If you see permission errors such as `'System.UnauthorizedAccessException: Access to the path '/usr/share/jellyfin/web/index.html' is denied.` in your logs, you will need to map the `index.html` file manually:
+
+1. Copy the index.html file from your container:
+
+   ```bash
+   docker cp jellyfin:/usr/share/jellyfin/web/index.html /path/to/your/jellyfin/config/index.html
+   ```
+
+2. Add a volume mapping to your Docker run command:
+
+   ```yaml
+   -v /path/to/your/jellyfin/config/index.html:/usr/share/jellyfin/web/index.html
+   ```
+
+3. Or for Docker Compose, add this to your volumes section:
+   ```yaml
+   services:
+     jellyfin:
+       # ... other config
+       volumes:
+         - /path/to/your/jellyfin/config:/config
+         - /path/to/your/jellyfin/config/index.html:/usr/share/jellyfin/web/index.html
+         # ... other volumes
+   ```
+
+This gives the plugin the necessary permissions to inject JavaScript into the web interface on the legacy 10.x fallback path.
+
+---
+
+
+## 🔧 Configuration
+
+1.  After installing, navigate to **Dashboard** > **Plugins** > **JavaScript Injector** in the list **--OR--** click on "JS Injector" in the dashboard sidebar
+
+2.  Click **Add Script** to create a new entry.
+3.  Give your script a descriptive **name**.
+4.  Enter your code in the **JavaScript Code** text area.
+5.  Use the **Enabled** checkbox to control whether the script is active.
+6.  Click **Save**.
+7.  **Refresh your browser** to see the changes take effect.
+
+
+## ⌨️ Usage Examples
+
+### Example 1: Simple Browser Alert Message
+
+A great way to test if the plugin is working.
+
+```js
+(function() {
+    'use strict';
+
+    const toast= `
+        alert('Yay!, Javascript injection worked!');
+    `;
+
+    const scriptElem = document.createElement('script');
+    scriptElem.textContent = toast;
+    document.head.appendChild(scriptElem);
+})();
+
+
 ```
 
-Then install **JavaScript Injector** from the catalog and restart Jellyfin.
+### Example 2: Add a Custom Banner
 
-The release workflow populates `manifest-v12.json` with the release ZIP URL, MD5 checksum, target ABI and timestamp when a Jellyfin 12 release is published.
+This script adds a banner to the top of the page for a specific user.
 
-## Jellyfin 10.10 / 10.11
+```js
+// Change this to the username you want to target
+(function () {
+    const targetUsername = 'admin';
 
-The original upstream repositories remain the recommended installation source for Jellyfin 10.x:
+    const flashingBannerCSS = `
+    @keyframes flashBanner {
+        0% { background-color: #ffeb3b; color: black; }
+        50% { background-color: #ff2111; color: white; }
+        100% { background-color: #ffeb3b; color: black; }
+    }
+    .skinHeader::before {
+        content: "⚠️ NOTICE: Special Banner for ${targetUsername} ⚠️";
+        display: block;
+        width: 100%;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        padding: 0px;
+        animation: flashBanner 1s infinite;
+        position: relative;
+        z-index: 9999;
+    }
+    `;
 
-**Jellyfin 10.11**
+    function tryInjectBanner() {
+        const userButton = document.querySelector(".headerUserButton");
+        if (userButton && userButton.title.toLowerCase() === targetUsername.toLowerCase()) {
+            const styleElem = document.createElement('style');
+            styleElem.innerText = flashingBannerCSS;
+            document.head.appendChild(styleElem);
+            return true;
+        }
+        return false;
+    }
+    const interval = setInterval(() => {
+        if (tryInjectBanner()) clearInterval(interval);
+    }, 300);
+})();
 
-```text
-https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.11/manifest.json
 ```
 
-**Jellyfin 10.10.7**
+## 🔌 Plugin Interface
 
-```text
-https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.10/manifest.json
+Other Jellyfin plugins can programmatically register JavaScript snippets using the `IJavaScriptRegistrationService` interface. Here's an example of how to use it:
+
+```csharp
+using System.Reflection;
+using System.Runtime.Loader;
+using Newtonsoft.Json.Linq;
+
+public class YourPlugin : BasePlugin
+{
+    public void RegisterYourScript()
+    {
+        try
+        {
+            // Find the JavaScript Injector assembly
+            Assembly? jsInjectorAssembly = AssemblyLoadContext.All
+                .SelectMany(x => x.Assemblies)
+                .FirstOrDefault(x => x.FullName?.Contains("Jellyfin.Plugin.JavaScriptInjector") ?? false);
+
+            if (jsInjectorAssembly != null)
+            {
+                // Get the PluginInterface type
+                Type? pluginInterfaceType = jsInjectorAssembly.GetType("Jellyfin.Plugin.JavaScriptInjector.PluginInterface");
+
+                if (pluginInterfaceType != null)
+                {
+                    // Create the registration payload
+                    var scriptRegistration = new JObject
+                    {
+                        { "id", $"{Id}-my-script" }, // Unique ID for your script
+                        { "name", "My Custom Script" },
+                        { "script", @"
+                            // Your JavaScript code here
+                            console.log('Hello from my plugin!');
+                        " },
+                        { "enabled", true },
+                        { "requiresAuthentication", false }, // Set to true if script should only run for logged-in users
+                        { "pluginId", Id.ToString() },
+                        { "pluginName", Name },
+                        { "pluginVersion", Version.ToString() }
+                    };
+
+                    // Register the script
+                    var registerResult = pluginInterfaceType.GetMethod("RegisterScript")?.Invoke(null, new object[] { scriptRegistration });
+
+                    if (registerResult is bool success && success)
+                    {
+                        _logger.LogInformation("Successfully registered JavaScript with JavaScript Injector plugin.");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to register JavaScript with JavaScript Injector plugin. RegisterScript returned false.");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to register JavaScript with JavaScript Injector plugin.");
+        }
+    }
+
+    public void UnregisterYourScripts()
+    {
+        try
+        {
+            // Find the JavaScript Injector assembly
+            Assembly? jsInjectorAssembly = AssemblyLoadContext.All
+                .SelectMany(x => x.Assemblies)
+                .FirstOrDefault(x => x.FullName?.Contains("Jellyfin.Plugin.JavaScriptInjector") ?? false);
+
+            if (jsInjectorAssembly != null)
+            {
+                Type? pluginInterfaceType = jsInjectorAssembly.GetType("Jellyfin.Plugin.JavaScriptInjector.PluginInterface");
+
+                if (pluginInterfaceType != null)
+                {
+                    var unregisterResult = pluginInterfaceType.GetMethod("UnregisterAllScriptsFromPlugin")?.Invoke(null, new object[] { Id.ToString() });
+
+                    // or if you want to unregister a specific script
+                    //pluginInterfaceType.GetMethod("UnregisterScript")?.Invoke(null, new object[] { $"{Id}-my-script" }); // -> returns bool, so adjust the result handling accordingly
+
+                    if (unregisterResult is int removedCount)
+                    {
+                        _logger?.LogInformation("Successfully unregistered {Count} script(s) from JavaScript Injector plugin.", removedCount);
+                    }
+                    else
+                    {
+                        _logger?.LogWarning("Failed to unregister scripts from JavaScript Injector plugin. Method returned unexpected value.");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to unregister JavaScript scripts.");
+        }
+    }
+}
 ```
 
-The source tree still contains the 10.10.7 and 10.11 build targets; the Jellyfin 12 release workflow only publishes the 12.x artifact.
+## 🙏🏻Credits
 
-## Configuration
+This plugin is a fork of and builds upon the original work of [johnpc](https://github.com/johnpc/jellyfin-plugin-custom-javascript). Thanks to the original author for creating the foundation for this project.
 
-After installation, open **Dashboard → Plugins → JavaScript Injector**, or use **JS Injector** in the dashboard sidebar.
+The Jellyfin 12 port in this fork builds on [n00bcodr/Jellyfin-JavaScript-Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector) and uses the request-time `IStartupFilter` injection approach proven by [Jellyfin Enhanced](https://github.com/n00bcodr/Jellyfin-Enhanced).
 
-1. Click **Add Script**.
-2. Give the script a descriptive name.
-3. Paste the JavaScript into the editor.
-4. Enable the script.
-5. Enable **Requires Authentication** when the script should only run after a user is logged in.
-6. Save and refresh Jellyfin Web.
+## 🗒️ Note
 
-Changes are loaded dynamically after a browser refresh; a Jellyfin server restart is not required for normal script edits.
+Be careful when using any custom JavaScript, as it can potentially introduce security vulnerabilities or break the Jellyfin UI. Only use code from trusted sources or code that you have written and fully understand.
 
-## Jellyfin 12 injection model
+---
 
-On Jellyfin 12 the plugin registers an `IStartupFilter` that intercepts only the Jellyfin Web shell response. It:
+<div align="center">
 
-- handles `/web`, `/web/` and `/web/index.html`, including base-URL-prefixed deployments;
-- requests an uncompressed full HTML response before rewriting it;
-- injects the existing JavaScript Injector bootstrap immediately before `</body>`;
-- avoids duplicate injection if the bootstrap is already present;
-- removes response validators that no longer apply after the in-memory rewrite;
-- serves the original response unchanged if injection fails.
+**Made with 💜 for Jellyfin and the community**
 
-The existing `public.js` and authenticated `private.js` loading behavior is preserved.
+### Enjoying Jellyfin JavaScript Injector?
 
-## Development
+Checkout my other repos!
 
-### Jellyfin 12 build
+[Jellyfin-Enhanced](https://github.com/n00bcodr/Jellyfin-Enhanced) (javascript/plugin) • [Jellyfin-Elsewhere](https://github.com/n00bcodr/Jellyfin-Elsewhere) (javascript) • [Jellyfin-Tweaks](https://github.com/n00bcodr/JellyfinTweaks) (plugin) • [Jellyfin-JavaScript-Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector) (plugin) • [Jellyfish](https://github.com/n00bcodr/Jellyfish/) (theme)
 
-```bash
-dotnet restore Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj -p:JellyfinTarget=jf12
-dotnet build Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj --configuration Release --no-restore -p:JellyfinTarget=jf12
-```
 
-Available build targets:
-
-| Target | Jellyfin | Runtime |
-| --- | --- | --- |
-| `jf12` | 12.x | .NET 10 |
-| `jf11` | 10.11.x | .NET 9 |
-| `jf10` | 10.10.7 | .NET 8 |
-
-### Release process
-
-Jellyfin 12 releases are intentionally manual:
-
-1. Merge the release-ready changes to `main`.
-2. Run the **Release Jellyfin 12** workflow from GitHub Actions.
-3. The workflow reads `AssemblyVersion`, builds the `jf12` target, creates `Jellyfin.Plugin.JavaScriptInjector_12.0.zip`, publishes a GitHub release using that version, calculates the MD5 checksum, and updates `manifest-v12.json` on `main`.
-
-This keeps the catalog manifest checksum tied to the exact published ZIP.
-
-## Plugin interface
-
-Other Jellyfin plugins can register scripts through the existing `IJavaScriptRegistrationService` / `PluginInterface` API. Existing registration payloads and script-management behavior are unchanged by the Jellyfin 12 port.
-
-## Credits
-
-This fork builds on [n00bcodr/Jellyfin-JavaScript-Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector), which itself builds on the original work of [johnpc/jellyfin-plugin-custom-javascript](https://github.com/johnpc/jellyfin-plugin-custom-javascript).
-
-The Jellyfin 12 request-time injection approach follows the same ASP.NET `IStartupFilter` pattern proven by [Jellyfin Enhanced](https://github.com/n00bcodr/Jellyfin-Enhanced).
-
-## Security
-
-Custom JavaScript runs inside the Jellyfin Web application and can access the same browser context as the logged-in user. Only install or write scripts you trust and understand.
-
-## License
-
-GPL-3.0. See [LICENSE](LICENSE).
+</div>
