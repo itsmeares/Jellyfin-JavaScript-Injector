@@ -48,7 +48,7 @@ namespace Jellyfin.Plugin.JavaScriptInjector.Helpers
         </script>";
             // The full block to be injected, wrapped in comments.
             var injectionBlock = $@"{startComment}
-        <!-- Injected using file-transformation -->
+        <!-- Injected by JavaScript Injector -->
         {publicScriptTag}
         {privateScriptLoader}
         {endComment}";
