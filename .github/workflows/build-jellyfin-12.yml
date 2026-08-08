@@ -4,8 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - feat/jellyfin-12
-      - ci/jellyfin-12-test-artifact
+      - main
 
 jobs:
   build:

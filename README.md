@@ -2,10 +2,13 @@
 
 The JavaScript Injector plugin for Jellyfin allows you to inject multiple, independent JavaScript snippets into the Jellyfin web UI. It provides a powerful and easy-to-use configuration page to manage all your custom scripts from one place.
 
+> [!NOTE]
+> This fork adds Jellyfin 12 support. Jellyfin 12 uses request-time ASP.NET middleware injection, so it does not require File Transformation or writes to `jellyfin-web/index.html`.
+
 <p align="center">
   <img src="https://img.shields.io/github/last-commit/n00bcodr/Jellyfin-JavaScript-Injector/main?logo=semantic-release&logoColor=white&label=Last%20Updated&labelColor=black&color=AA5CC3&cacheSeconds=3600" alt="Last Updated">
   <img src="https://img.shields.io/github/commit-activity/w/n00bcodr/Jellyfin-JavaScript-Injector?logo=git&label=Commit%20Activity&labelColor=black&color=00A4DC&cacheSeconds=600" alt="Commit Activity">
-  <img src="https://img.shields.io/badge/Jellyfin%20Version-10.10, 10.11-AA5CC3?logo=jellyfin&logoColor=00A4DC&labelColor=black" alt="Jellyfin Version">
+  <img src="https://img.shields.io/badge/Jellyfin%20Version-10.10, 10.11, 12-AA5CC3?logo=jellyfin&logoColor=00A4DC&labelColor=black" alt="Jellyfin Version">
   <br>  <br>
   <img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/n00bcodr/Jellyfin-JavaScript-Injector/latest/Jellyfin.Plugin.JavaScriptInjector_10.10.7.zip?displayAssetName=false&label=10.10%20Downloads%40Latest&labelColor=black&color=00A4DC&cacheSeconds=60">
   <img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/n00bcodr/Jellyfin-JavaScript-Injector/latest/Jellyfin.Plugin.JavaScriptInjector_10.11.0.zip?displayAssetName=false&label=10.11%20Downloads%40Latest&labelColor=black&color=AA5CC3&cacheSeconds=60">
@@ -36,6 +39,13 @@ The JavaScript Injector plugin for Jellyfin allows you to inject multiple, indep
 3.  Set the **Repository URL** to:
 
 > [!IMPORTANT]
+> **If you are on Jellyfin version 12**
+> ```
+> https://raw.githubusercontent.com/itsmeares/Jellyfin-JavaScript-Injector/main/manifest-v12.json
+> ```
+>
+> The Jellyfin 12 release uses request-time injection and does not require File Transformation or a writable Jellyfin Web directory.
+>
 > **If you are on Jellyfin version 10.11**
 > ``` 
 > https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.11/manifest.json 
@@ -52,10 +62,12 @@ The JavaScript Injector plugin for Jellyfin allows you to inject multiple, indep
 #### 🐳 Docker Installation Notes
 
 > [!IMPORTANT]
-> If you are on a docker install it is highly advisable to have [file-transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) at least v2.2.1.0 installed. It helps avoid permission issues while modifying index.html
+> **Jellyfin 12:** no additional Docker mapping is required. The plugin injects at request time and leaves `index.html` unchanged.
+>
+> **Jellyfin 10.x:** if you use the legacy injection path, it is highly advisable to have [file-transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) at least v2.2.1.0 installed. It helps avoid permission issues while modifying index.html.
 
 
-If you're running Jellyfin through Docker, the plugin may not have permission to modify jellyfin-web to inject the script. If you see permission errors such as `'System.UnauthorizedAccessException: Access to the path '/usr/share/jellyfin/web/index.html' is denied.` in your logs, you will need to map the `index.html` file manually:
+If you're running Jellyfin 10.x through Docker without File Transformation, the plugin may not have permission to modify jellyfin-web to inject the script. If you see permission errors such as `'System.UnauthorizedAccessException: Access to the path '/usr/share/jellyfin/web/index.html' is denied.` in your logs, you will need to map the `index.html` file manually:
 
 1. Copy the index.html file from your container:
 
@@ -80,7 +92,7 @@ If you're running Jellyfin through Docker, the plugin may not have permission to
          # ... other volumes
    ```
 
-This gives the plugin the necessary permissions to inject JavaScript into the web interface.
+This gives the plugin the necessary permissions to inject JavaScript into the web interface on the legacy 10.x fallback path.
 
 ---
 
@@ -270,6 +282,8 @@ public class YourPlugin : BasePlugin
 ## 🙏🏻Credits
 
 This plugin is a fork of and builds upon the original work of [johnpc](https://github.com/johnpc/jellyfin-plugin-custom-javascript). Thanks to the original author for creating the foundation for this project.
+
+The Jellyfin 12 port in this fork builds on [n00bcodr/Jellyfin-JavaScript-Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector) and uses the request-time `IStartupFilter` injection approach proven by [Jellyfin Enhanced](https://github.com/n00bcodr/Jellyfin-Enhanced).
 
 ## 🗒️ Note
 
