@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Jellyfin.Plugin.JavaScriptInjector.Helpers;
 using Jellyfin.Plugin.JavaScriptInjector.JellyfinVersionSpecific;
 using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -15,16 +16,21 @@ namespace Jellyfin.Plugin.JavaScriptInjector.Services
     {
         private readonly ILogger<StartupService> _logger;
         private readonly IApplicationPaths _appPaths;
+        private readonly IServerApplicationHost _applicationHost;
 
         public string Name => "JavaScript Injector Startup";
         public string Key => "JavaScriptInjectorStartup";
-        public string Description => "Injects scripts using the File Transformation plugin and performs cleanup.";
+        public string Description => "Initializes JavaScript injection and performs cleanup.";
         public string Category => "Startup Services";
 
-        public StartupService(ILogger<StartupService> logger, IApplicationPaths appPaths)
+        public StartupService(
+            ILogger<StartupService> logger,
+            IApplicationPaths appPaths,
+            IServerApplicationHost applicationHost)
         {
             _logger = logger;
             _appPaths = appPaths;
+            _applicationHost = applicationHost;
         }
 
         public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
@@ -32,6 +38,15 @@ namespace Jellyfin.Plugin.JavaScriptInjector.Services
             await Task.Run(() =>
             {
                 CleanupOldScript();
+
+                if (_applicationHost.ApplicationVersion.Major >= 12)
+                {
+                    _logger.LogInformation("Jellyfin 12 detected. Client scripts will be injected at request time.");
+                    return;
+                }
+
+                // Preserve the existing 10.x behavior. The request-time middleware is
+                // also registered, but is idempotent and will not duplicate this block.
                 RegisterFileTransformation();
             }, cancellationToken);
         }
@@ -94,19 +109,13 @@ namespace Jellyfin.Plugin.JavaScriptInjector.Services
                 else
                 {
                     _logger.LogWarning("Could not find PluginInterface in FileTransformation assembly. Using fallback injection method.");
-                    if (Plugin.Instance != null)
-                    {
-                        Plugin.Instance.InjectScript();
-                    }
+                    Plugin.Instance?.InjectScript();
                 }
             }
             else
             {
                 _logger.LogWarning("File Transformation plugin not found. Using fallback injection method.");
-                if (Plugin.Instance != null)
-                {
-                    Plugin.Instance.InjectScript();
-                }
+                Plugin.Instance?.InjectScript();
             }
         }
 

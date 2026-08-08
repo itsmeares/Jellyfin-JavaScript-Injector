@@ -1,0 +1,26 @@
+name: Build Jellyfin 12
+
+on:
+  pull_request:
+  push:
+    branches:
+      - feat/jellyfin-12
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj -p:JellyfinTarget=jf12
+
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj --configuration Release --no-restore -p:JellyfinTarget=jf12

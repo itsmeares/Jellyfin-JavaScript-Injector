@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.JavaScriptInjector.Services;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Jellyfin.Plugin.JavaScriptInjector
@@ -11,6 +12,7 @@ namespace Jellyfin.Plugin.JavaScriptInjector
         {
             serviceCollection.AddSingleton<StartupService>();
             serviceCollection.AddSingleton<IJavaScriptRegistrationService, JavaScriptRegistrationService>();
+            serviceCollection.AddSingleton<IStartupFilter, ScriptInjectionStartupFilter>();
         }
     }
 }
