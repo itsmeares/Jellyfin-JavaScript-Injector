@@ -8,8 +8,8 @@
     <JellyfinTarget Condition="'$(JellyfinTarget)' == ''">jf12</JellyfinTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>3.5.0.0</AssemblyVersion>
-    <FileVersion>3.5.0.0</FileVersion>
+    <AssemblyVersion>3.6.0.0</AssemblyVersion>
+    <FileVersion>3.6.0.0</FileVersion>
     <RootNamespace>Jellyfin.Plugin.JavaScriptInjector</RootNamespace>
     <AssemblyName>Jellyfin.Plugin.JavaScriptInjector</AssemblyName>
   </PropertyGroup>
