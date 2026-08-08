@@ -1,0 +1,96 @@
+name: Release Jellyfin 12
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read plugin version
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's:.*<AssemblyVersion>\(.*\)</AssemblyVersion>.*:\1:p' Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj | head -n1)
+          test -n "$VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Restore
+        run: dotnet restore Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj -p:JellyfinTarget=jf12
+
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.JavaScriptInjector/Jellyfin.Plugin.JavaScriptInjector.csproj --configuration Release --no-restore -p:JellyfinTarget=jf12
+
+      - name: Package
+        shell: bash
+        run: |
+          PACKAGE="Jellyfin.Plugin.JavaScriptInjector_12.0.zip"
+          DLL="Jellyfin.Plugin.JavaScriptInjector/bin/Release/net10.0/Jellyfin.Plugin.JavaScriptInjector.dll"
+          test -f "$DLL"
+          rm -f "$PACKAGE"
+          zip -j "$PACKAGE" "$DLL"
+          CHECKSUM=$(md5sum "$PACKAGE" | awk '{print toupper($1)}')
+          echo "PACKAGE=$PACKAGE" >> "$GITHUB_ENV"
+          echo "CHECKSUM=$CHECKSUM" >> "$GITHUB_ENV"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "$VERSION" "$PACKAGE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target main \
+            --title "v$VERSION - Jellyfin 12 support" \
+            --notes "Jellyfin 12 / .NET 10 release. Adds request-time JavaScript injection through ASP.NET middleware, so File Transformation and writable jellyfin-web files are not required on Jellyfin 12."
+
+      - name: Update Jellyfin 12 manifest
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          path = Path("manifest-v12.json")
+          data = json.loads(path.read_text())
+          plugin = data[0]
+          version = os.environ["VERSION"]
+
+          entry = {
+              "changelog": "Jellyfin 12 support with request-time script injection; no File Transformation or writable web directory required.",
+              "targetAbi": "12.0.0.0",
+              "version": version,
+              "sourceUrl": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{version}/{os.environ['PACKAGE']}",
+              "checksum": os.environ["CHECKSUM"],
+              "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+          }
+
+          plugin["versions"] = [v for v in plugin.get("versions", []) if v.get("version") != version]
+          plugin["versions"].insert(0, entry)
+          path.write_text(json.dumps(data, indent=2) + "\n")
+          PY
+
+      - name: Publish manifest update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest-v12.json
+          git commit -m "chore: publish Jellyfin 12 manifest for $VERSION"
+          git push origin HEAD:main
